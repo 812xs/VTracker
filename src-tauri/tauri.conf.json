@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "VTracker",
+  "version": "0.1.0",
+  "identifier": "com.vietra.vtracker",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "VTracker",
+        "width": 1080,
+        "height": 680,
+        "minWidth": 1080,
+        "minHeight": 680,
+        "maxWidth": 1080,
+        "maxHeight": 680,
+        "resizable": false,
+        "decorations": false,
+        "transparent": false,
+        "skipTaskbar": true,
+        "shadow": false,
+        "center": true,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "createUpdaterArtifacts": false,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/icon.png",
+      "icons/icon.ico"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "identifier": "default",
+  "description": "Ana pencere izinleri",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "process:allow-exit"
+  ]
+}

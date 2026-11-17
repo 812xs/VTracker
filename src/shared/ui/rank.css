@@ -1,0 +1,24 @@
+.rank {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.rank--empty {
+  color: var(--color-text-muted);
+}
+
+.rank__icon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  object-fit: contain;
+}
+
+.rank__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

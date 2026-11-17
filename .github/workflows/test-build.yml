@@ -1,0 +1,73 @@
+name: test-build
+
+on:
+  push:
+    branches:
+      - kabuk
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: test-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Bağımlılıkları kur
+        run: pnpm install --no-frozen-lockfile
+
+      # İmzasız derleme: TAURI_SIGNING_PRIVATE_KEY beklenmez, createUpdaterArtifacts kapalıdır.
+      - name: Derle (NSIS)
+        run: pnpm tauri build --bundles nsis
+
+      - name: Çıktıları denetle
+        shell: bash
+        run: |
+          ls -la src-tauri/target/release/valorant-overlay.exe
+          ls -la src-tauri/target/release/bundle/nsis/
+
+      - name: Actions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vtracker-kabuk
+          path: |
+            src-tauri/target/release/valorant-overlay.exe
+            src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+
+      - name: kabuk-ui prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete kabuk-ui --cleanup-tag --yes || true
+          printf '%s\n%s\n' \
+            'Güncelleme kanalı değildir.' \
+            "Kaynak: ${GITHUB_SHA}" > release-notes.md
+          gh release create kabuk-ui \
+            --prerelease \
+            --target "${GITHUB_SHA}" \
+            --title "VTracker kabuk" \
+            --notes-file release-notes.md \
+            src-tauri/target/release/valorant-overlay.exe \
+            src-tauri/target/release/bundle/nsis/*.exe

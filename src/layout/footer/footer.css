@@ -1,0 +1,13 @@
+.footer {
+  grid-column: 1 / span 2;
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-5);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-card-border);
+  position: relative;
+  z-index: 1;
+}

@@ -1,0 +1,26 @@
+.home__phase {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.home__dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+.home__dot--live {
+  background: var(--color-blue);
+}
+
+.home__self {
+  margin: var(--space-3) 0 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}

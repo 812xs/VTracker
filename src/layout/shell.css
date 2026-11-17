@@ -1,0 +1,58 @@
+.shell {
+  position: relative;
+  width: var(--shell-w);
+  height: var(--shell-h);
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  grid-template-rows: var(--header-h) minmax(0, 1fr) var(--footer-h);
+  overflow: hidden;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-shell);
+}
+
+/* Sağ üst mavi: header yüksekliğinde sağdan sola sönen şerit ve sağdan 72px içeri girip aşağı sönen şerit.
+   Sidebar ve footer'a taşmaz. */
+.shell::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: var(--footer-h);
+  left: var(--sidebar-w);
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to left, var(--color-blue-soft), transparent),
+    linear-gradient(to bottom, var(--color-blue-soft), transparent);
+  background-repeat: no-repeat;
+  background-position:
+    right top,
+    right top;
+  background-size:
+    60% var(--header-h),
+    var(--light-band) 100%;
+}
+
+.shell__content {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-5);
+  position: relative;
+  z-index: 1;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.shell__content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.shell__content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
