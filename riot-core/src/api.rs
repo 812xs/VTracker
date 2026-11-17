@@ -784,9 +784,10 @@ async fn store_inner() -> R<Store> {
     let pd = sess.pd()?;
     let wallet_url = format!("{pd}/store/v1/wallet/{}", sess.puuid);
     let store_url = format!("{pd}/store/v3/storefront/{}", sess.puuid);
+    let body = json!({});
     let (w, sv) = tokio::join!(
         sess.get(&wallet_url),
-        sess.send_json(Method::POST, &store_url, &json!({}))
+        sess.send_json(Method::POST, &store_url, &body)
     );
     let w = w?.ok_or(CoreError::Api)?;
     let sv = sv?.ok_or(CoreError::Api)?;
