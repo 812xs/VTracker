@@ -700,8 +700,8 @@ async fn my_stats_inner() -> R<MyStats> {
     let sess_ref = &sess;
     let a_ref: &Assets = &a;
     let me_ref = me.as_str();
-    let mut rows: Vec<MatchRow> = stream::iter(updates.iter())
-        .map(move |u| async move { match_row(sess_ref, a_ref, me_ref, u).await })
+    let mut rows: Vec<MatchRow> = stream::iter(updates)
+        .map(move |u| async move { match_row(sess_ref, a_ref, me_ref, &u).await })
         .buffer_unordered(4)
         .filter_map(|x| async move { x })
         .collect()
