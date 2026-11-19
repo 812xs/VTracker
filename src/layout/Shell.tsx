@@ -9,7 +9,10 @@ import StatsPage from "../pages/stats/StatsPage";
 import StorePage from "../pages/store/StorePage";
 import PlayerPage from "../pages/player/PlayerPage";
 import SettingsPage from "../pages/settings/SettingsPage";
-import { useSnapshot } from "../shared/session/useSnapshot";
+import { useCommand, useSnapshot } from "../shared/session/useSnapshot";
+import { visibleConnections } from "../shared/session/connection";
+import { loadShowDiscord, saveShowDiscord } from "../shared/settings/settings";
+import type { MyStats, Store } from "../shared/session/types";
 import "./shell.css";
 
 interface Selection {
@@ -20,7 +23,12 @@ interface Selection {
 export default function Shell() {
   const [nav, setNav] = useState<NavId>(loadNav);
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [showDiscord, setShowDiscord] = useState<boolean>(loadShowDiscord);
   const session = useSnapshot();
+  // Veri yalnız ilgili sayfa açıkken istenir; header yenile düğmesi aktif sayfayınkini çağırır.
+  const stats = useCommand<MyStats>("get_my_stats", nav === "stats");
+  const store = useCommand<Store>("get_store", nav === "store");
+  const active = nav === "stats" ? stats : nav === "store" ? store : session;
 
   const snapshot = session.data;
   const match = snapshot?.match ?? null;
@@ -30,6 +38,11 @@ export default function Shell() {
   useEffect(() => {
     if (selection && selection.matchId !== matchId) setSelection(null);
   }, [matchId, selection]);
+
+  const changeShowDiscord = (show: boolean) => {
+    setShowDiscord(show);
+    saveShowDiscord(show);
+  };
 
   const go = (id: NavId) => {
     setNav(id);
@@ -57,15 +70,14 @@ export default function Shell() {
           loading={session.loading}
           error={session.error}
           onSelect={selectPlayer}
-          onRefresh={session.reload}
         />
       );
       break;
     case "stats":
-      page = <StatsPage />;
+      page = <StatsPage data={stats.data} loading={stats.loading} error={stats.error} />;
       break;
     case "store":
-      page = <StorePage />;
+      page = <StorePage data={store.data} loading={store.loading} error={store.error} />;
       break;
     case "player":
       page = (
@@ -73,30 +85,29 @@ export default function Shell() {
           player={player}
           loading={session.loading}
           error={session.error}
-          onRefresh={session.reload}
         />
       );
       break;
     case "settings":
-      page = <SettingsPage status={snapshot?.status ?? null} loading={session.loading} />;
-      break;
-    default:
       page = (
-        <HomePage
-          snapshot={snapshot}
-          loading={session.loading}
-          error={session.error}
-          onRefresh={session.reload}
+        <SettingsPage
+          status={snapshot?.status ?? null}
+          me={self}
+          showDiscord={showDiscord}
+          onShowDiscord={changeShowDiscord}
         />
       );
+      break;
+    default:
+      page = <HomePage snapshot={snapshot} loading={session.loading} error={session.error} />;
   }
 
   return (
     <div className="shell">
       <Sidebar active={nav} onSelect={go} />
-      <Header title={navLabel(nav)} />
+      <Header title={navLabel(nav)} onRefresh={active.reload} refreshing={active.loading} />
       <main className="shell__content">{page}</main>
-      <Footer />
+      <Footer connections={visibleConnections(snapshot?.status ?? null, self, showDiscord)} />
     </div>
   );
 }

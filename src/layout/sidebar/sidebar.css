@@ -42,6 +42,6 @@
 
 .sidebar__btn--active,
 .sidebar__btn--active:hover {
-  color: var(--color-blue);
-  background: var(--color-blue-dim);
+  color: var(--color-accent);
+  background: var(--color-accent-dim);
 }

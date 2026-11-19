@@ -5,25 +5,62 @@
   --color-text-muted: #a1a1aa;
   --color-border: rgba(255, 255, 255, 0.14);
   --color-card-border: rgba(255, 255, 255, 0.08);
-  --color-blue: #2f80ff;
-  --color-blue-soft: rgba(47, 128, 255, 0.55);
-  --color-blue-dim: rgba(47, 128, 255, 0.16);
+
+  /* Tema renkleri (r, g, b). Seçili tema html[data-theme] ile --accent-rgb'ye bağlanır. */
+  --theme-blue: 47, 128, 255;
+  --theme-blue-hi: 147, 197, 253;
+  --theme-yellow: 245, 185, 30;
+  --theme-yellow-hi: 253, 224, 120;
+  --theme-green: 34, 197, 94;
+  --theme-green-hi: 134, 239, 172;
+  --theme-red: 239, 68, 68;
+  --theme-red-hi: 252, 165, 165;
+
+  --accent-rgb: var(--theme-blue);
+  --accent-hi-rgb: var(--theme-blue-hi);
+  --color-accent: rgb(var(--accent-rgb));
+  --color-accent-hi: rgb(var(--accent-hi-rgb));
+  --color-accent-soft: rgba(var(--accent-rgb), 0.55);
+  --color-accent-dim: rgba(var(--accent-rgb), 0.16);
+
+  /* Durum renkleri: tema ile değişmez. */
+  --color-ok: #22c55e;
+  --color-warn: #eab308;
+  --color-off: #71717a;
+
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
+  --gap-tight: 2px;
   --radius-shell: 12px;
   --radius-card: 12px;
+  --radius-tile: 8px;
   --header-h: 48px;
   --footer-h: 32px;
   --sidebar-w: 64px;
   --light-band: 72px;
   --shell-w: 1080px;
   --shell-h: 680px;
-  --font-sans: "Geist Variable", sans-serif;
+  --font-sans: "Outfit Variable", sans-serif;
   color-scheme: dark;
+}
+
+html[data-theme="yellow"] {
+  --accent-rgb: var(--theme-yellow);
+  --accent-hi-rgb: var(--theme-yellow-hi);
+}
+
+html[data-theme="green"] {
+  --accent-rgb: var(--theme-green);
+  --accent-hi-rgb: var(--theme-green-hi);
+}
+
+html[data-theme="red"] {
+  --accent-rgb: var(--theme-red);
+  --accent-hi-rgb: var(--theme-red-hi);
 }
 
 *,
@@ -56,7 +93,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-blue);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 

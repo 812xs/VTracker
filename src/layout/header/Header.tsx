@@ -4,14 +4,27 @@ import "./header.css";
 
 interface HeaderProps {
   title: string;
+  onRefresh: () => void;
+  refreshing: boolean;
 }
 
-export default function Header({ title }: HeaderProps) {
+export default function Header({ title, onRefresh, refreshing }: HeaderProps) {
   return (
     <header className="header">
       <div className="header__drag" data-tauri-drag-region>
         {title}
       </div>
+      <button
+        type="button"
+        className="header__refresh"
+        aria-label="Yenile"
+        title="Bu sayfayı yenile"
+        onClick={onRefresh}
+        disabled={refreshing}
+      >
+        <Icon name="refresh" width={16} height={16} />
+        <span>Yenile</span>
+      </button>
       <button
         type="button"
         className="header__close"

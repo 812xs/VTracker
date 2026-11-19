@@ -1,41 +1,16 @@
-import { Icon } from "../icons/icons";
-import { isTauri } from "../session/tauri";
+import { Panel } from "./Section";
 import "./state.css";
-
-interface RefreshButtonProps {
-  onClick: () => void;
-  busy?: boolean;
-}
-
-/** Yalnızca Tauri içinde görünür. */
-export function RefreshButton({ onClick, busy = false }: RefreshButtonProps) {
-  if (!isTauri()) return null;
-  return (
-    <button
-      type="button"
-      className="refresh"
-      onClick={onClick}
-      disabled={busy}
-      aria-label="Yenile"
-    >
-      <Icon name="refresh" width={16} height={16} />
-      <span>Yenile</span>
-    </button>
-  );
-}
 
 interface EmptyStateProps {
   message: string;
-  onRefresh?: () => void;
 }
 
-/** Ortak boş durum: tek cümle ve (Tauri içindeyse) yenile düğmesi. */
-export function EmptyState({ message, onRefresh }: EmptyStateProps) {
+/** Ortak boş durum: alanın içinde tek cümle. */
+export function EmptyState({ message }: EmptyStateProps) {
   return (
-    <div className="empty">
+    <Panel>
       <p className="empty__text">{message}</p>
-      {onRefresh ? <RefreshButton onClick={onRefresh} /> : null}
-    </div>
+    </Panel>
   );
 }
 

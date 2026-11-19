@@ -1,4 +1,4 @@
-import { Card } from "../../shared/ui/Card";
+import { Panel } from "../../shared/ui/Section";
 import { EmptyState, Skeleton } from "../../shared/ui/State";
 import type { Phase, Snapshot } from "../../shared/session/types";
 import "./home.css";
@@ -7,7 +7,6 @@ interface HomePageProps {
   snapshot: Snapshot | null;
   loading: boolean;
   error: string | null;
-  onRefresh: () => void;
 }
 
 const PHASE_TEXT: Record<Phase, string> = {
@@ -17,17 +16,9 @@ const PHASE_TEXT: Record<Phase, string> = {
   inMatch: "Maç sürüyor.",
 };
 
-export default function HomePage({ snapshot, loading, error, onRefresh }: HomePageProps) {
+export default function HomePage({ snapshot, loading, error }: HomePageProps) {
   if (!snapshot) {
-    return (
-      <Card title="Ana Sayfa">
-        {loading ? (
-          <Skeleton rows={2} />
-        ) : (
-          <EmptyState message={error ?? "Oturum verisi yok."} onRefresh={onRefresh} />
-        )}
-      </Card>
-    );
+    return loading ? <Skeleton rows={2} /> : <EmptyState message={error ?? "Oturum verisi yok."} />;
   }
 
   const me = snapshot.me;
@@ -38,17 +29,15 @@ export default function HomePage({ snapshot, loading, error, onRefresh }: HomePa
   if (rank && rank.rr !== null) parts.push(`${rank.rr} RR`);
 
   return (
-    <Card title="Ana Sayfa">
+    <Panel className="home">
       <p className="home__phase">
         <span
-          className={
-            snapshot.phase === "closed" ? "home__dot" : "home__dot home__dot--live"
-          }
+          className={snapshot.phase === "closed" ? "home__dot" : "home__dot home__dot--live"}
           aria-hidden="true"
         />
         {PHASE_TEXT[snapshot.phase]}
       </p>
       {parts.length > 0 ? <p className="home__self">{parts.join(" · ")}</p> : null}
-    </Card>
+    </Panel>
   );
 }

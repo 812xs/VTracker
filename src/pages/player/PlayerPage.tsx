@@ -1,4 +1,4 @@
-import { Card } from "../../shared/ui/Card";
+import { Panel, Section } from "../../shared/ui/Section";
 import { RankBadge } from "../../shared/ui/RankBadge";
 import { EmptyState, Skeleton } from "../../shared/ui/State";
 import { formatDecimal } from "../../shared/format/format";
@@ -9,19 +9,14 @@ interface PlayerPageProps {
   player: Player | null;
   loading: boolean;
   error: string | null;
-  onRefresh: () => void;
 }
 
-export default function PlayerPage({ player, loading, error, onRefresh }: PlayerPageProps) {
+export default function PlayerPage({ player, loading, error }: PlayerPageProps) {
   if (!player) {
-    return (
-      <Card title="Oyuncu Kartı">
-        {loading ? (
-          <Skeleton rows={4} />
-        ) : (
-          <EmptyState message={error ?? "Gösterilecek oyuncu yok."} onRefresh={onRefresh} />
-        )}
-      </Card>
+    return loading ? (
+      <Skeleton rows={6} />
+    ) : (
+      <EmptyState message={error ?? "Gösterilecek oyuncu yok."} />
     );
   }
 
@@ -29,7 +24,7 @@ export default function PlayerPage({ player, loading, error, onRefresh }: Player
 
   return (
     <div className="player">
-      <Card title="Oyuncu Kartı">
+      <Panel>
         <div className="player__top">
           {player.cardImage ? (
             <img className="player__card" src={player.cardImage} alt="" />
@@ -72,9 +67,9 @@ export default function PlayerPage({ player, loading, error, onRefresh }: Player
             </div>
           </dl>
         </div>
-      </Card>
+      </Panel>
 
-      <Card title="Envanter">
+      <Section title="Envanter">
         {player.weapons.length === 0 ? (
           <EmptyState message="Bu oyuncunun silah envanteri şu anda görünmüyor." />
         ) : (
@@ -95,7 +90,7 @@ export default function PlayerPage({ player, loading, error, onRefresh }: Player
             ))}
           </ul>
         )}
-      </Card>
+      </Section>
     </div>
   );
 }

@@ -11,18 +11,18 @@ export interface AsyncState<T> {
   reload: () => void;
 }
 
-/** Tek seferlik komut: açılışta yükler, reload ile yeniler. Tarayıcı önizlemesinde çağrı yapmaz. */
-export function useCommand<T>(command: string): AsyncState<T> {
+/**
+ * Tek seferlik komut: etkinleştirildiğinde yükler, reload ile yeniler.
+ * Etkin değilken (sayfa açık değilken) çağrı yapmaz. Tarayıcı önizlemesinde çağrı yapmaz.
+ */
+export function useCommand<T>(command: string, enabled: boolean): AsyncState<T> {
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState<boolean>(isTauri());
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    if (!isTauri()) {
-      setLoading(false);
-      return;
-    }
+    if (!isTauri() || !enabled) return;
     let alive = true;
     setLoading(true);
     call<T>(command)
@@ -41,10 +41,12 @@ export function useCommand<T>(command: string): AsyncState<T> {
     return () => {
       alive = false;
     };
-  }, [command, tick]);
+  }, [command, tick, enabled]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
-  return { data, loading, error, reload };
+  // İlk etkinleşme karesinde de iskelet görünsün: boş durum bir an bile parlamasın.
+  const pending = enabled && isTauri() && data === null && error === null;
+  return { data, loading: loading || pending, error, reload };
 }
 
 /** Oturum anlık görüntüsü: 5 sn'de bir yenilenir. */
@@ -60,7 +62,8 @@ export function useSnapshot(): AsyncState<Snapshot> {
       return;
     }
     let alive = true;
-    const load = () => {
+    const load = (manual: boolean) => {
+      if (manual) setLoading(true);
       call<Snapshot>("get_snapshot")
         .then((v) => {
           if (!alive) return;
@@ -74,8 +77,8 @@ export function useSnapshot(): AsyncState<Snapshot> {
           if (alive) setLoading(false);
         });
     };
-    load();
-    const id = window.setInterval(load, POLL_MS);
+    load(tick > 0);
+    const id = window.setInterval(() => load(false), POLL_MS);
     return () => {
       alive = false;
       window.clearInterval(id);

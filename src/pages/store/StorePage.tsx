@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Card } from "../../shared/ui/Card";
-import { EmptyState, RefreshButton, Skeleton } from "../../shared/ui/State";
+import { Panel, Section } from "../../shared/ui/Section";
+import { EmptyState, Skeleton } from "../../shared/ui/State";
 import { formatNumber, formatRemaining } from "../../shared/format/format";
-import { useCommand } from "../../shared/session/useSnapshot";
 import type { Offer, Store } from "../../shared/session/types";
 import "./store.css";
 
@@ -32,8 +31,13 @@ function OfferCard({ offer, vp }: { offer: Offer; vp: number }) {
   );
 }
 
-export default function StorePage() {
-  const { data, loading, error, reload } = useCommand<Store>("get_store");
+interface StorePageProps {
+  data: Store | null;
+  loading: boolean;
+  error: string | null;
+}
+
+export default function StorePage({ data, loading, error }: StorePageProps) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -42,14 +46,10 @@ export default function StorePage() {
   }, []);
 
   if (!data) {
-    return (
-      <Card title="Mağaza">
-        {loading ? (
-          <Skeleton rows={5} />
-        ) : (
-          <EmptyState message={error ?? "Mağaza verisi yok."} onRefresh={reload} />
-        )}
-      </Card>
+    return loading ? (
+      <Skeleton rows={8} />
+    ) : (
+      <EmptyState message={error ?? "Mağaza verisi yok."} />
     );
   }
 
@@ -57,30 +57,24 @@ export default function StorePage() {
 
   return (
     <div className="store">
-      <Card title="Mağaza" action={<RefreshButton onClick={reload} busy={loading} />}>
-        <div className="store__wallet">
-          <div className="store__coin">
-            <span className="store__label">VP</span>
-            <span className="store__amount">{formatNumber(wallet.vp)}</span>
-          </div>
-          <div className="store__coin">
-            <span className="store__label">Radianite</span>
-            <span className="store__amount">{formatNumber(wallet.radianite)}</span>
-          </div>
-          <div className="store__coin">
-            <span className="store__label">Kingdom</span>
-            <span className="store__amount">{formatNumber(wallet.kingdom)}</span>
-          </div>
-        </div>
-      </Card>
+      <div className="store__wallet">
+        <Panel className="store__coin">
+          <span className="store__label">VP</span>
+          <span className="store__amount">{formatNumber(wallet.vp)}</span>
+        </Panel>
+        <Panel className="store__coin">
+          <span className="store__label">Radianite</span>
+          <span className="store__amount">{formatNumber(wallet.radianite)}</span>
+        </Panel>
+        <Panel className="store__coin">
+          <span className="store__label">Kingdom</span>
+          <span className="store__amount">{formatNumber(wallet.kingdom)}</span>
+        </Panel>
+      </div>
 
-      <Card
+      <Section
         title="Günlük teklifler"
-        action={
-          <span className="store__remaining">
-            Kalan süre: {formatRemaining(daily.expiresAt, now)}
-          </span>
-        }
+        aside={`Kalan süre: ${formatRemaining(daily.expiresAt, now)}`}
       >
         {daily.offers.length === 0 ? (
           <EmptyState message="Günlük teklif bulunamadı." />
@@ -91,17 +85,11 @@ export default function StorePage() {
             ))}
           </ul>
         )}
-      </Card>
+      </Section>
 
-      <Card
+      <Section
         title="Gece pazarı"
-        action={
-          nightMarket ? (
-            <span className="store__remaining">
-              Kalan süre: {formatRemaining(nightMarket.expiresAt, now)}
-            </span>
-          ) : undefined
-        }
+        aside={nightMarket ? `Kalan süre: ${formatRemaining(nightMarket.expiresAt, now)}` : undefined}
       >
         {nightMarket ? (
           <ul className="store__grid store__grid--night">
@@ -112,7 +100,7 @@ export default function StorePage() {
         ) : (
           <EmptyState message="Gece pazarı şu anda açık değil." />
         )}
-      </Card>
+      </Section>
     </div>
   );
 }

@@ -1,8 +1,7 @@
-import { Card } from "../../shared/ui/Card";
+import { Panel, Section } from "../../shared/ui/Section";
 import { RankBadge } from "../../shared/ui/RankBadge";
-import { EmptyState, RefreshButton, Skeleton } from "../../shared/ui/State";
+import { EmptyState, Skeleton } from "../../shared/ui/State";
 import { formatDate, formatDecimal, formatTime } from "../../shared/format/format";
-import { useCommand } from "../../shared/session/useSnapshot";
 import type { MatchRow, MyStats } from "../../shared/session/types";
 import "./stats.css";
 
@@ -35,57 +34,55 @@ function Row({ m }: { m: MatchRow }) {
   );
 }
 
-export default function StatsPage() {
-  const { data, loading, error, reload } = useCommand<MyStats>("get_my_stats");
+interface StatsPageProps {
+  data: MyStats | null;
+  loading: boolean;
+  error: string | null;
+}
 
+export default function StatsPage({ data, loading, error }: StatsPageProps) {
   if (!data) {
-    return (
-      <Card title="İstatistiklerim">
-        {loading ? (
-          <Skeleton rows={6} />
-        ) : (
-          <EmptyState message={error ?? "İstatistik verisi yok."} onRefresh={reload} />
-        )}
-      </Card>
+    return loading ? (
+      <Skeleton rows={8} />
+    ) : (
+      <EmptyState message={error ?? "İstatistik verisi yok."} />
     );
   }
 
   return (
     <div className="stats">
-      <Card title="İstatistiklerim" action={<RefreshButton onClick={reload} busy={loading} />}>
-        <div className="stats__tiles">
-          <div className="stats__tile">
-            <span className="stats__label">Güncel rank</span>
-            <RankBadge rank={data.current} />
-          </div>
-          <div className="stats__tile">
-            <span className="stats__label">RR</span>
-            <span className="stats__value">{data.current?.rr ?? "—"}</span>
-          </div>
-          <div className="stats__tile">
-            <span className="stats__label">Zirve rank</span>
-            <RankBadge rank={data.peak} />
-          </div>
-          <div className="stats__tile">
-            <span className="stats__label">Galibiyet oranı</span>
-            <span className="stats__value">
-              {data.winRate === null ? "—" : `%${formatDecimal(data.winRate, 1)}`}
-            </span>
-          </div>
-          <div className="stats__tile">
-            <span className="stats__label">K/D</span>
-            <span className="stats__value">{formatDecimal(data.kd)}</span>
-          </div>
-          <div className="stats__tile">
-            <span className="stats__label">Ort. ACS</span>
-            <span className="stats__value">
-              {data.avgAcs === null ? "—" : Math.round(data.avgAcs)}
-            </span>
-          </div>
-        </div>
-      </Card>
+      <div className="stats__tiles">
+        <Panel className="stats__tile">
+          <span className="stats__label">Güncel rank</span>
+          <RankBadge rank={data.current} />
+        </Panel>
+        <Panel className="stats__tile">
+          <span className="stats__label">RR</span>
+          <span className="stats__value">{data.current?.rr ?? "—"}</span>
+        </Panel>
+        <Panel className="stats__tile">
+          <span className="stats__label">Zirve rank</span>
+          <RankBadge rank={data.peak} />
+        </Panel>
+        <Panel className="stats__tile">
+          <span className="stats__label">Galibiyet oranı</span>
+          <span className="stats__value">
+            {data.winRate === null ? "—" : `%${formatDecimal(data.winRate, 1)}`}
+          </span>
+        </Panel>
+        <Panel className="stats__tile">
+          <span className="stats__label">K/D</span>
+          <span className="stats__value">{formatDecimal(data.kd)}</span>
+        </Panel>
+        <Panel className="stats__tile">
+          <span className="stats__label">Ort. ACS</span>
+          <span className="stats__value">
+            {data.avgAcs === null ? "—" : Math.round(data.avgAcs)}
+          </span>
+        </Panel>
+      </div>
 
-      <Card title="Son maçlar">
+      <Section title="Son maçlar">
         {data.matches.length === 0 ? (
           <EmptyState message="Son dereceli maç bulunamadı." />
         ) : (
@@ -108,7 +105,7 @@ export default function StatsPage() {
             </tbody>
           </table>
         )}
-      </Card>
+      </Section>
     </div>
   );
 }

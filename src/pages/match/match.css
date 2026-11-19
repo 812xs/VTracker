@@ -1,55 +1,72 @@
-.match__mode {
+.match {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.match__info {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.match__map {
   font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.match__mode {
+  font-size: 0.75rem;
   color: var(--color-text-muted);
 }
 
 .match__head,
 .match__row {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) 56px minmax(0, 1fr) 52px minmax(0, 1.6fr) minmax(0, 1.3fr);
+  grid-template-columns: minmax(0, 1.7fr) 52px minmax(0, 1fr) 48px minmax(0, 1.6fr) minmax(0, 1.3fr);
   align-items: center;
-  column-gap: var(--space-3);
+  column-gap: var(--space-2);
 }
 
 .match__head {
-  padding: 0 var(--space-3) var(--space-2);
+  padding: 0 var(--space-3);
   font-size: 0.75rem;
   color: var(--color-text-muted);
 }
 
-.match__team {
-  margin-top: var(--space-3);
-}
-
-.match__team-title {
-  margin: 0 0 var(--space-1);
-  padding: 0 var(--space-3);
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
+.match__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
 }
 
 .match__row {
   width: 100%;
-  height: 36px;
+  height: 30px;
   padding: 0 var(--space-3);
+  font: inherit;
   font-size: 0.875rem;
   color: var(--color-text);
   text-align: left;
-  background: transparent;
-  border: 0;
-  border-radius: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-tile);
   cursor: pointer;
-  transition: background-color 200ms;
+  transition:
+    background-color 200ms,
+    border-color 200ms;
 }
 
 .match__row:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: #1a1a1a;
 }
 
 .match__row--selected,
 .match__row--selected:hover {
-  background: var(--color-blue-dim);
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent-soft);
 }
 
 .match__name,
@@ -62,9 +79,9 @@
 
 .match__you {
   margin-left: var(--space-2);
-  padding: 1px var(--space-2);
+  padding: 0 var(--space-2);
   font-size: 0.75rem;
-  color: var(--color-blue);
-  background: var(--color-blue-dim);
+  color: var(--color-accent);
+  background: var(--color-accent-dim);
   border-radius: var(--space-1);
 }
