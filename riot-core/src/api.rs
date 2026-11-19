@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-const SKIN_LEVEL_SOCKET: &str = "e7c63390-eda7-46e0-bb7a-a6abdacd2433";
 const VP_ID: &str = "85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741";
 const RADIANITE_ID: &str = "e59aa87c-4cbf-517a-5983-6e81511be9b7";
 const KINGDOM_ID: &str = "85ca954a-41f2-ce94-9b45-8ca3dd39a00d";
@@ -97,44 +96,102 @@ fn map_info(a: &Assets, map_id: &str) -> (Option<String>, Option<String>) {
         .unwrap_or((None, None))
 }
 
-fn weapon_entry(a: &Assets, weapon_id: &str, level_id: &str) -> Option<WeaponEntry> {
-    let lv = a.levels.get(&level_id.to_lowercase())?;
+fn is_uuid(s: &str) -> bool {
+    let b = s.as_bytes();
+    b.len() == 36 && [8, 13, 18, 23].iter().all(|&i| b[i] == b'-')
+}
+
+/// Düğümün altındaki bütün UUID değerlerini (küçük harf) toplar. Yapı değişse de kimlikler bulunur.
+fn collect_uuids(v: &Value, out: &mut Vec<String>) {
+    match v {
+        Value::String(s) if is_uuid(s) => {
+            let l = s.to_lowercase();
+            if !out.contains(&l) {
+                out.push(l);
+            }
+        }
+        Value::Array(a) => a.iter().for_each(|x| collect_uuids(x, out)),
+        Value::Object(m) => m.values().for_each(|x| collect_uuids(x, out)),
+        _ => {}
+    }
+}
+
+/// Bir silah yuvasındaki kimliklerden kaplamayı çözer: renk varyantı, seviye ve ana kaplama taranır.
+/// Standart kaplamada silahın kendi görseli, diğerlerinde renk varyantının asıl görseli kullanılır.
+fn resolve_weapon(a: &Assets, weapon_id: &str, ids: &[String]) -> Option<WeaponEntry> {
     let w = a.weapons.get(weapon_id)?;
+    let chroma = ids.iter().find_map(|i| a.chromas.get(i));
+    let level = ids.iter().find_map(|i| a.levels.get(i));
+    let skin = ids
+        .iter()
+        .find_map(|i| a.skins.get(i))
+        .or_else(|| level.and_then(|l| a.skins.get(&l.skin)))
+        .or_else(|| chroma.and_then(|c| a.skins.get(&c.skin)));
+
+    let Some(skin) = skin else {
+        // Yuva var ama kaplama çözülemedi: standart kabul edilir.
+        return Some(WeaponEntry {
+            weapon_id: weapon_id.to_string(),
+            weapon_name: w.name.clone(),
+            skin_name: "Standart".to_string(),
+            skin_icon: w.icon.clone(),
+            is_default: true,
+        });
+    };
+
+    let (skin_name, skin_icon) = if skin.is_default {
+        ("Standart".to_string(), w.icon.clone().or_else(|| skin.icon.clone()))
+    } else {
+        (
+            skin.name.clone(),
+            chroma
+                .and_then(|c| c.render.clone())
+                .or_else(|| skin.icon.clone())
+                .or_else(|| level.and_then(|l| l.icon.clone()))
+                .or_else(|| w.icon.clone()),
+        )
+    };
     Some(WeaponEntry {
         weapon_id: weapon_id.to_string(),
         weapon_name: w.name.clone(),
-        skin_name: lv.name.clone(),
-        skin_icon: lv.icon.clone().or_else(|| w.icon.clone()),
-        is_default: lv.is_default,
+        skin_name,
+        skin_icon,
+        is_default: skin.is_default,
     })
 }
 
-fn weapons_from_items(a: &Assets, items: &Value) -> Vec<WeaponEntry> {
-    let Some(obj) = items.as_object() else {
-        return Vec::new();
-    };
-    let mut out = Vec::new();
-    for wid in &a.weapon_order {
-        let Some(entry) = obj
-            .iter()
-            .find(|(k, _)| k.eq_ignore_ascii_case(wid))
-            .map(|(_, v)| v)
-        else {
-            continue;
-        };
-        let level = entry
-            .get("Sockets")
-            .and_then(|s| s.get(SKIN_LEVEL_SOCKET))
-            .and_then(|s| s.get("Item"))
-            .and_then(|i| i.get("ID"))
-            .and_then(|i| i.as_str());
-        if let Some(e) = level.and_then(|l| weapon_entry(a, wid, l)) {
-            out.push(e);
-        }
-    }
-    out
+fn insert_item(map: &mut HashMap<String, Vec<String>>, weapon_id: &str, item: &Value) {
+    let mut ids = Vec::new();
+    collect_uuids(item, &mut ids);
+    map.insert(weapon_id.to_lowercase(), ids);
 }
 
+/// `Items` nesne (anahtar silah kimliği) ya da dizi olabilir.
+fn weapons_from_items(a: &Assets, items: &Value) -> Vec<WeaponEntry> {
+    let mut by_weapon: HashMap<String, Vec<String>> = HashMap::new();
+    match items {
+        Value::Object(m) => {
+            for (k, it) in m {
+                let wid = st(it, "ID").unwrap_or_else(|| k.clone());
+                insert_item(&mut by_weapon, &wid, it);
+            }
+        }
+        Value::Array(arr) => {
+            for it in arr {
+                if let Some(wid) = st(it, "ID") {
+                    insert_item(&mut by_weapon, &wid, it);
+                }
+            }
+        }
+        _ => {}
+    }
+    a.weapon_order
+        .iter()
+        .filter_map(|wid| by_weapon.get(wid).and_then(|ids| resolve_weapon(a, wid, ids)))
+        .collect()
+}
+
+/// Kendi donatı (personalization): `Guns[]` içinde SkinID, SkinLevelID, ChromaID.
 fn weapons_from_guns(a: &Assets, loadout: &Value) -> Vec<WeaponEntry> {
     let guns = loadout.get("Guns").and_then(|g| g.as_array());
     let mut out = Vec::new();
@@ -144,20 +201,37 @@ fn weapons_from_guns(a: &Assets, loadout: &Value) -> Vec<WeaponEntry> {
                 .map(|x| x.eq_ignore_ascii_case(wid))
                 .unwrap_or(false)
         });
-        if let Some(level) = gun.and_then(|g| st(g, "SkinLevelID")) {
-            if let Some(e) = weapon_entry(a, wid, &level) {
-                out.push(e);
-            }
+        let Some(g) = gun else { continue };
+        let ids: Vec<String> = ["SkinID", "SkinLevelID", "ChromaID"]
+            .iter()
+            .filter_map(|k| st(g, k))
+            .map(|x| x.to_lowercase())
+            .collect();
+        if let Some(e) = resolve_weapon(a, wid, &ids) {
+            out.push(e);
         }
     }
     out
 }
 
+/// Yanıt `Loadouts` dizisi ya da düz dizi olabilir; kayıt `Loadout` altında ya da kökte olabilir.
+fn loadout_entries(v: &Value) -> Vec<&Value> {
+    v.get("Loadouts")
+        .and_then(|x| x.as_array())
+        .or_else(|| v.as_array())
+        .map(|a| a.iter().collect())
+        .unwrap_or_default()
+}
+
 fn loadout_map(v: &Value) -> HashMap<String, Value> {
     let mut out = HashMap::new();
-    for l in v.get("Loadouts").and_then(|x| x.as_array()).into_iter().flatten() {
-        let lo = l.get("Loadout").unwrap_or(l);
-        if let (Some(sub), Some(items)) = (st(lo, "Subject"), lo.get("Items")) {
+    for e in loadout_entries(v) {
+        let lo = match e.get("Loadout") {
+            Some(l) if l.is_object() => l,
+            _ => e,
+        };
+        let sub = st(lo, "Subject").or_else(|| st(e, "Subject"));
+        if let (Some(sub), Some(items)) = (sub, lo.get("Items")) {
             out.insert(sub.to_lowercase(), items.clone());
         }
     }
@@ -534,6 +608,13 @@ async fn build_pregame(sess: &Session, a: &Assets, id: &str) -> R<MatchInfo> {
         .map(|x| x.to_lowercase())
         .collect();
     let en = enrich(sess, a, &ids).await;
+    // Bu uç her sürümde olmayabilir; yoksa envanter boş kalır.
+    let loads = sess
+        .get(&format!("{glz}/pregame/v1/matches/{id}/loadouts"))
+        .await
+        .ok()
+        .flatten();
+    let items = loads.as_ref().map(loadout_map).unwrap_or_default();
 
     let mut players = Vec::new();
     for p in raw {
@@ -542,6 +623,10 @@ async fn build_pregame(sess: &Session, a: &Assets, id: &str) -> R<MatchInfo> {
         };
         let e = en.get(&sub).cloned().unwrap_or_default();
         let identity = p.get("PlayerIdentity").cloned().unwrap_or(Value::Null);
+        let weapons = items
+            .get(&sub)
+            .map(|it| weapons_from_items(a, it))
+            .unwrap_or_default();
         players.push(build_player(
             a,
             &e,
@@ -550,7 +635,7 @@ async fn build_pregame(sess: &Session, a: &Assets, id: &str) -> R<MatchInfo> {
             team.clone(),
             st(p, "CharacterID"),
             &identity,
-            Vec::new(),
+            weapons,
         ));
     }
 

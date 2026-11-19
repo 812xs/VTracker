@@ -2,7 +2,7 @@ import { Panel, Section } from "../../shared/ui/Section";
 import { RankBadge } from "../../shared/ui/RankBadge";
 import { EmptyState, Skeleton } from "../../shared/ui/State";
 import { formatDecimal } from "../../shared/format/format";
-import type { MatchInfo, Player } from "../../shared/session/types";
+import type { MatchInfo, Player, WeaponEntry } from "../../shared/session/types";
 import "./match.css";
 
 interface MatchPageProps {
@@ -11,6 +11,35 @@ interface MatchPageProps {
   loading: boolean;
   error: string | null;
   onSelect: (puuid: string) => void;
+}
+
+// Satırda gösterilen silahlar: Vandal, Phantom, Operator, yakın dövüş.
+const THUMBS = [
+  { id: "9c82e19d-4575-0200-1a81-3eacf00cf872", name: "Vandal" },
+  { id: "ee8e8d15-496b-07ac-e5f6-8fae5d4c7b1a", name: "Phantom" },
+  { id: "a03b24d3-4319-996d-0f8c-94bbfba1dfc7", name: "Operator" },
+  { id: "2f59173c-4bed-b6c3-2191-dea9b58be9c7", name: "Yakın dövüş" },
+];
+
+function Thumbs({ weapons }: { weapons: WeaponEntry[] }) {
+  return (
+    <span className="match__thumbs">
+      {THUMBS.map((t) => {
+        const w = weapons.find((x) => x.weaponId.toLowerCase() === t.id);
+        return (
+          <span
+            key={t.id}
+            className={w?.isDefault ? "thumb thumb--default" : "thumb"}
+            title={w ? `${w.weaponName}: ${w.skinName}` : t.name}
+          >
+            {w?.skinIcon ? (
+              <img className="thumb__img" src={w.skinIcon} alt={w.skinName} loading="lazy" />
+            ) : null}
+          </span>
+        );
+      })}
+    </span>
+  );
 }
 
 interface Team {
@@ -70,6 +99,7 @@ export default function MatchPage({
         <span>K/D</span>
         <span>Rank</span>
         <span>Zirve</span>
+        <span>Silahlar</span>
       </div>
       {teams.map((team) => (
         <Section title={team.label} key={team.id || "takim"}>
@@ -92,6 +122,7 @@ export default function MatchPage({
                 <span>{formatDecimal(p.kd)}</span>
                 <RankBadge rank={p.current} withRr />
                 <RankBadge rank={p.peak} />
+                <Thumbs weapons={p.weapons} />
               </button>
             ))}
           </div>

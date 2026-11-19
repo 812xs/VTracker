@@ -22,11 +22,27 @@ pub struct Weapon {
     pub icon: Option<String>,
 }
 
-pub struct Level {
+/// Ana kaplama (skin UUID'si ile bulunur).
+pub struct Skin {
     pub name: String,
     pub icon: Option<String>,
     pub weapon: String,
     pub is_default: bool,
+}
+
+/// Kaplama seviyesi (seviye soketindeki UUID).
+pub struct Level {
+    pub name: String,
+    pub icon: Option<String>,
+    pub weapon: String,
+    pub skin: String,
+    pub is_default: bool,
+}
+
+/// Renk varyantı. `render` asıl görseldir (fullRender).
+pub struct Chroma {
+    pub render: Option<String>,
+    pub skin: String,
 }
 
 /// valorant-api.com varlık sözlüğü (tr-TR). Anahtarlar küçük harf UUID'dir.
@@ -37,7 +53,9 @@ pub struct Assets {
     pub tiers: HashMap<i32, Tier>,
     pub weapons: HashMap<String, Weapon>,
     pub weapon_order: Vec<String>,
+    pub skins: HashMap<String, Skin>,
     pub levels: HashMap<String, Level>,
+    pub chromas: HashMap<String, Chroma>,
 }
 
 pub fn st(v: &Value, key: &str) -> Option<String> {
@@ -81,7 +99,9 @@ impl Assets {
             tiers: HashMap::new(),
             weapons: HashMap::new(),
             weapon_order: Vec::new(),
+            skins: HashMap::new(),
             levels: HashMap::new(),
+            chromas: HashMap::new(),
         };
 
         for v in &agents {
@@ -153,8 +173,30 @@ impl Assets {
             for skin in skins.into_iter().flatten() {
                 let skin_id = st(skin, "uuid").map(|s| s.to_lowercase()).unwrap_or_default();
                 let skin_name = st(skin, "displayName").unwrap_or_default();
-                let skin_icon = st(skin, "displayIcon");
-                let is_default = !skin_id.is_empty() && skin_id == default_skin;
+                let lower = skin_name.to_lowercase();
+                let is_default = (!skin_id.is_empty() && skin_id == default_skin)
+                    || lower.starts_with("standart")
+                    || lower.starts_with("standard");
+                let chromas = skin.get("chromas").and_then(|c| c.as_array());
+                let skin_icon = st(skin, "displayIcon").or_else(|| {
+                    chromas
+                        .into_iter()
+                        .flatten()
+                        .find_map(|c| st(c, "fullRender"))
+                });
+
+                if !skin_id.is_empty() {
+                    a.skins.insert(
+                        skin_id.clone(),
+                        Skin {
+                            name: skin_name.clone(),
+                            icon: skin_icon.clone(),
+                            weapon: wid.clone(),
+                            is_default,
+                        },
+                    );
+                }
+
                 let levels = skin.get("levels").and_then(|l| l.as_array());
                 for lv in levels.into_iter().flatten() {
                     if let Some(lid) = st(lv, "uuid") {
@@ -164,7 +206,22 @@ impl Assets {
                                 name: skin_name.clone(),
                                 icon: st(lv, "displayIcon").or_else(|| skin_icon.clone()),
                                 weapon: wid.clone(),
+                                skin: skin_id.clone(),
                                 is_default,
+                            },
+                        );
+                    }
+                }
+
+                for c in chromas.into_iter().flatten() {
+                    if let Some(cid) = st(c, "uuid") {
+                        a.chromas.insert(
+                            cid.to_lowercase(),
+                            Chroma {
+                                render: st(c, "fullRender")
+                                    .or_else(|| st(c, "displayIcon"))
+                                    .or_else(|| skin_icon.clone()),
+                                skin: skin_id.clone(),
                             },
                         );
                     }
